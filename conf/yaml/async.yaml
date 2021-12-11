@@ -1,0 +1,6 @@
+grpc:
+  addr: 127.0.0.1:9999
+  name: asynctask
+
+kafka:
+  addr: 127.0.0.1:9092

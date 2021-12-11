@@ -1,0 +1,60 @@
+syntax = "proto3";
+package social;
+option go_package = "rpc/social/pb;social_service";
+
+message FollowItem {
+  int64 uid = 1;
+  int64 target_id = 2;
+  int32 follow_type = 3;
+}
+
+message FollowRequest {
+  FollowItem follow_item = 1;
+}
+
+message EmptyResponse {
+}
+
+message UnfollowRequest {
+  FollowItem follow_item = 1;
+}
+
+message ListRequest {
+  int64 uid = 1;
+  int64 last_id = 2;
+  int64 offset = 3;
+  int32 follow_type = 4;
+}
+
+message ListResponse {
+  repeated int64 uids = 1;
+  bool has_more = 2;
+}
+
+message CountRequest {
+  int64 uid = 1;
+  int32 follow_type = 2;
+}
+
+message CountResponse {
+  int64 follow_count = 1;
+  int64 follower_count = 2;
+}
+
+message FollowAllRequest {
+  int64 uid = 1;
+}
+
+message FollowAllResponse {
+  repeated int64 uids = 2;
+}
+
+service SocialServer {
+  rpc Follow(FollowRequest) returns (EmptyResponse);
+  rpc Unfollow(FollowRequest) returns (EmptyResponse);
+  rpc GetFollow(ListRequest) returns (ListResponse);
+  rpc GetFollower(ListRequest) returns (ListResponse);
+  rpc GetFollowCount(CountRequest) returns (CountResponse);
+  rpc GetFollowAll(FollowAllRequest) returns (stream FollowAllResponse);
+  rpc GetFollowerAll(FollowAllRequest) returns (stream FollowAllResponse);
+}
