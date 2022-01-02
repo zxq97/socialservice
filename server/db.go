@@ -143,7 +143,7 @@ func dbUnfollowTopic(ctx context.Context, uid, topicID int64) error {
 
 func dbGetFollowCount(ctx context.Context, uid int64) (int64, int64, error) {
 	followCount := FollowCount{}
-	err := dbCli.Select([]string{"follow_count", "follower_count"}).Where("uid = ?", uid).Find(&followCount).Error
+	err := slaveCli.Select([]string{"follow_count", "follower_count"}).Where("uid = ?", uid).Find(&followCount).Error
 	if err != nil {
 		log.Printf("ctx %v dbGetFollowCount uid %v err %v", ctx, uid, err)
 		return 0, 0, err
@@ -153,7 +153,7 @@ func dbGetFollowCount(ctx context.Context, uid int64) (int64, int64, error) {
 
 func dbGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
 	followTopicCount := FollowTopicCount{}
-	err := dbCli.Select("follow_count").Where("uid = ?", uid).Find(&followTopicCount).Error
+	err := slaveCli.Select("follow_count").Where("uid = ?", uid).Find(&followTopicCount).Error
 	if err != nil {
 		log.Printf("ctx %v dbGetFollowTopicCount uid %v err %v", ctx, uid, err)
 		return 0, err
@@ -163,7 +163,7 @@ func dbGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
 
 func dbGetFollow(ctx context.Context, uid int64) ([]int64, map[int64]int64, error) {
 	follows := []Follow{}
-	err := dbCli.Select([]string{"follow_uid, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&follows).Error
+	err := slaveCli.Select([]string{"follow_uid, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&follows).Error
 	if err != nil {
 		log.Printf("ctx %v db get user follow uid %v err %v", ctx, uid, err)
 		return nil, nil, err
@@ -179,7 +179,7 @@ func dbGetFollow(ctx context.Context, uid int64) ([]int64, map[int64]int64, erro
 
 func dbGetFollower(ctx context.Context, uid int64) ([]int64, map[int64]int64, error) {
 	followers := []Follower{}
-	err := dbCli.Select([]string{"follower_uid, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&followers).Error
+	err := slaveCli.Select([]string{"follower_uid, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&followers).Error
 	if err != nil {
 		log.Printf("ctx %v db get user follower uid %v err %v", ctx, uid, err)
 		return nil, nil, err
@@ -195,7 +195,7 @@ func dbGetFollower(ctx context.Context, uid int64) ([]int64, map[int64]int64, er
 
 func dbGetFollowTopic(ctx context.Context, uid int64) ([]int64, map[int64]int64, error) {
 	followTopics := []FollowTopic{}
-	err := dbCli.Select([]string{"topic_id, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&followTopics).Error
+	err := slaveCli.Select([]string{"topic_id, ctime"}).Where("uid = ?", uid).Order("id desc").Find(&followTopics).Error
 	if err != nil {
 		log.Printf("ctx %v dbGetFollowTopic uid %v err %v", ctx, uid, err)
 		return nil, nil, err

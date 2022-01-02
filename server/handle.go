@@ -19,16 +19,21 @@ type SocialService struct {
 
 var (
 	mcCli    *memcache.Client
-	redisCli *redis.Client
+	redisCli redis.Cmdable
 	dbCli    *gorm.DB
+	slaveCli *gorm.DB
 )
 
 func InitService(config *conf.Conf) error {
 	var err error
 	log.SetFlags(log.Ldate | log.Lshortfile | log.Ltime)
 	mcCli = conf.GetMC(config.MC.Addr)
-	redisCli = conf.GetRedis(config.Redis.Addr, config.Redis.DB)
+	redisCli = conf.GetRedisCluster(config.RedisCluster.Addr)
 	dbCli, err = conf.GetGorm(fmt.Sprintf(conf.MysqlAddr, config.Mysql.User, config.Mysql.Password, config.Mysql.Host, config.Mysql.Port, config.Mysql.DB))
+	if err != nil {
+		return err
+	}
+	slaveCli, err = conf.GetGorm(fmt.Sprintf(conf.MysqlAddr, config.Slave.User, config.Slave.Password, config.Slave.Host, config.Slave.Port, config.Slave.DB))
 	return err
 }
 
