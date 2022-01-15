@@ -8,7 +8,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"log"
 	"socialservice/conf"
 	"socialservice/rpc/social/pb"
 	"socialservice/util/constant"
@@ -22,8 +21,6 @@ var (
 	redisCli redis.Cmdable
 	dbCli    *gorm.DB
 	slaveCli *gorm.DB
-	infoLog  *log.Logger
-	excLog   *log.Logger
 )
 
 func InitService(config *conf.Conf) error {
@@ -35,14 +32,6 @@ func InitService(config *conf.Conf) error {
 		return err
 	}
 	slaveCli, err = conf.GetGorm(fmt.Sprintf(conf.MysqlAddr, config.Slave.User, config.Slave.Password, config.Slave.Host, config.Slave.Port, config.Slave.DB))
-	if err != nil {
-		return err
-	}
-	infoLog, err = conf.InitLog(config.InfoLog.Path)
-	if err != nil {
-		return err
-	}
-	excLog, err = conf.InitLog(config.ExcLog.Path)
 	return err
 }
 

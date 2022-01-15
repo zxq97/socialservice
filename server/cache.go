@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
+	"socialservice/global"
 	"socialservice/util/cast"
 	"socialservice/util/constant"
 	"time"
@@ -36,7 +37,7 @@ func cacheFollow(ctx context.Context, uid, toUID int64) error {
 	pipe.Incr(cfKey)
 	_, err := pipe.Exec()
 	if err != nil {
-		excLog.Printf("ctx %v follow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
+		global.ExcLog.Printf("ctx %v follow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
 	}
 	return err
 }
@@ -53,7 +54,7 @@ func cacheUnfollow(ctx context.Context, uid, toUID int64) error {
 	pipe.Decr(cfKey)
 	_, err := pipe.Exec()
 	if err != nil {
-		excLog.Printf("ctx %v unfollow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
+		global.ExcLog.Printf("ctx %v unfollow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
 	}
 	return err
 }
@@ -66,7 +67,7 @@ func cacheFollowTopic(ctx context.Context, uid, topicID int64) error {
 	pipe.Incr(cKey)
 	_, err := pipe.Exec()
 	if err != nil {
-		excLog.Printf("ctx %v cacheFollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
+		global.ExcLog.Printf("ctx %v cacheFollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
 	}
 	return err
 }
@@ -79,7 +80,7 @@ func cacheUnfollowTopic(ctx context.Context, uid, topicID int64) error {
 	pipe.Decr(cKey)
 	_, err := pipe.Exec()
 	if err != nil {
-		excLog.Printf("ctx %v cacheUnfollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
+		global.ExcLog.Printf("ctx %v cacheUnfollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
 	}
 	return err
 }
@@ -89,7 +90,7 @@ func cacheGetFollowCount(ctx context.Context, uid int64) (int64, int64, error) {
 	fKey := fmt.Sprintf(RedisKeyFollowerCount, uid)
 	val, err := redisCli.MGet(key, fKey).Result()
 	if err != nil || len(val) != 2 {
-		excLog.Printf("ctx %v get follow count uid %v err %v", ctx, uid, err)
+		global.ExcLog.Printf("ctx %v get follow count uid %v err %v", ctx, uid, err)
 		return 0, 0, err
 	}
 
@@ -103,7 +104,7 @@ func cacheSetFollowCount(ctx context.Context, uid, followCount, followerCount in
 	fKey := fmt.Sprintf(RedisKeyFollowerCount, uid)
 	err := redisCli.MSet(key, followCount, fKey, followerCount).Err()
 	if err != nil {
-		excLog.Printf("ctx %v set follow count uid %v err %v", ctx, uid, err)
+		global.ExcLog.Printf("ctx %v set follow count uid %v err %v", ctx, uid, err)
 	}
 }
 
@@ -111,7 +112,7 @@ func cacheGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
 	key := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
 	val, err := redisCli.Get(key).Result()
 	if err != nil && err != redis.Nil {
-		excLog.Printf("ctx %v cacheGetFollowTopicCount uid %v err %v", ctx, uid, err)
+		global.ExcLog.Printf("ctx %v cacheGetFollowTopicCount uid %v err %v", ctx, uid, err)
 		return 0, err
 	}
 	return cast.ParseInt(val, 0), nil
@@ -121,14 +122,14 @@ func cacheSetFollowTopicCount(ctx context.Context, uid, topicCnt int64) {
 	key := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
 	err := redisCli.Set(key, topicCnt, RedisKeyFollowCountTTL).Err()
 	if err != nil {
-		excLog.Printf("ctx %v cacheSetFollowTopicCount uid %v topic_count %v err %v", ctx, uid, topicCnt)
+		global.ExcLog.Printf("ctx %v cacheSetFollowTopicCount uid %v topic_count %v err %v", ctx, uid, topicCnt)
 	}
 }
 
 func cacheGetFollow(ctx context.Context, key string, cursor, offset int64) ([]int64, bool, error) {
 	val, err := redisCli.ZRevRange(key, cursor, cursor+offset).Result()
 	if err != nil {
-		excLog.Printf("ctx %v cache get key %v cursor %v err %v", ctx, key, cursor, err)
+		global.ExcLog.Printf("ctx %v cache get key %v cursor %v err %v", ctx, key, cursor, err)
 		return nil, false, err
 	}
 	var hasMore bool
@@ -156,7 +157,7 @@ func cacheSetFollow(ctx context.Context, key string, uids []int64, utMap map[int
 		}
 		err := redisCli.ZAdd(key, z...).Err()
 		if err != nil {
-			excLog.Printf("ctx %v set follow z %v err %v", ctx, z, err)
+			global.ExcLog.Printf("ctx %v set follow z %v err %v", ctx, z, err)
 			continue
 		}
 		time.Sleep(SleepTime)
@@ -170,7 +171,7 @@ func getAllStream(ctx context.Context, key string, cursor uint64) ([]int64, uint
 	)
 	vals, cursor, err = redisCli.ZScan(key, cursor, "", constant.BatchSize).Result()
 	if err != nil {
-		excLog.Printf("ctx %v getAllStream key %v cursor %v err %v", ctx, key, cursor, err)
+		global.ExcLog.Printf("ctx %v getAllStream key %v cursor %v err %v", ctx, key, cursor, err)
 		return nil, 0, err
 	}
 	uids := make([]int64, 0, len(vals))

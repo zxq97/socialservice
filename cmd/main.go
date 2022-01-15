@@ -5,6 +5,7 @@ import (
 	"github.com/micro/go-micro/registry"
 	"github.com/micro/go-micro/registry/etcd"
 	"socialservice/conf"
+	"socialservice/global"
 	"socialservice/rpc/social/pb"
 	"socialservice/server"
 )
@@ -16,6 +17,15 @@ var (
 
 func main() {
 	socialConf, err = conf.LoadYaml(conf.SocialConfPath)
+	if err != nil {
+		panic(err)
+	}
+
+	global.InfoLog, err = conf.InitLog(socialConf.InfoLog.Path)
+	if err != nil {
+		panic(err)
+	}
+	global.ExcLog, err = conf.InitLog(socialConf.ExcLog.Path)
 	if err != nil {
 		panic(err)
 	}
