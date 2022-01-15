@@ -22,11 +22,12 @@ var (
 	redisCli redis.Cmdable
 	dbCli    *gorm.DB
 	slaveCli *gorm.DB
+	infoLog  *log.Logger
+	excLog   *log.Logger
 )
 
 func InitService(config *conf.Conf) error {
 	var err error
-	log.SetFlags(log.Ldate | log.Lshortfile | log.Ltime)
 	mcCli = conf.GetMC(config.MC.Addr)
 	redisCli = conf.GetRedisCluster(config.RedisCluster.Addr)
 	dbCli, err = conf.GetGorm(fmt.Sprintf(conf.MysqlAddr, config.Mysql.User, config.Mysql.Password, config.Mysql.Host, config.Mysql.Port, config.Mysql.DB))
@@ -34,6 +35,14 @@ func InitService(config *conf.Conf) error {
 		return err
 	}
 	slaveCli, err = conf.GetGorm(fmt.Sprintf(conf.MysqlAddr, config.Slave.User, config.Slave.Password, config.Slave.Host, config.Slave.Port, config.Slave.DB))
+	if err != nil {
+		return err
+	}
+	infoLog, err = conf.InitLog(config.InfoLog.Path)
+	if err != nil {
+		return err
+	}
+	excLog, err = conf.InitLog(config.ExcLog.Path)
 	return err
 }
 

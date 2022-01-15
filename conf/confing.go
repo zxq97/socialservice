@@ -6,6 +6,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
+	"os"
 	"time"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -58,6 +60,10 @@ type KafkaConf struct {
 	Addr []string `yaml:"addr"`
 }
 
+type LogConf struct {
+	Path string `yaml:"path"`
+}
+
 type Conf struct {
 	Mysql        MysqlConf        `yaml:"mysql"`
 	Slave        MysqlConf        `yaml:"slave"`
@@ -66,6 +72,8 @@ type Conf struct {
 	Grpc         GrpcConf         `yaml:"grpc"`
 	Etcd         EtcdConf         `yaml:"etcd"`
 	Kafka        KafkaConf        `yaml:"kafka"`
+	InfoLog      LogConf          `yaml:"info_log"`
+	ExcLog       LogConf          `yaml:"exc_log"`
 }
 
 func LoadYaml(path string) (*Conf, error) {
@@ -109,4 +117,12 @@ func GetGorm(addr string) (*gorm.DB, error) {
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(50)
 	return db, nil
+}
+
+func InitLog(path string) (*log.Logger, error) {
+	fp, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	if err != nil {
+		return nil, err
+	}
+	return log.New(fp, "", log.LstdFlags|log.Lshortfile), nil
 }
