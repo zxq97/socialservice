@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"github.com/jinzhu/gorm"
 	"socialservice/global"
 	"time"
@@ -30,7 +31,7 @@ func dbFollow(ctx context.Context, uid, toUID int64) error {
 		FollowCount:   0,
 		FollowerCount: 1,
 	}
-	tx := dbCli.Begin()
+	tx := dbCli.BeginTx(ctx, &sql.TxOptions{})
 	defer tx.Rollback()
 	err := tx.Create(followItem).Error
 	if err != nil {
@@ -67,7 +68,7 @@ func dbFollowTopic(ctx context.Context, uid, topicID int64) error {
 		UID:         uid,
 		FollowCount: 1,
 	}
-	tx := dbCli.Begin()
+	tx := dbCli.BeginTx(ctx, &sql.TxOptions{})
 	defer tx.Rollback()
 	err := dbCli.Create(&followTopicItem).Error
 	if err != nil {
@@ -94,7 +95,7 @@ func dbUnfollow(ctx context.Context, uid, toUID int64) error {
 		FollowCount:   0,
 		FollowerCount: 1,
 	}
-	tx := dbCli.Begin()
+	tx := dbCli.BeginTx(ctx, &sql.TxOptions{})
 	defer tx.Rollback()
 	err := dbCli.Where("uid = ? and follow_uid = ?", uid, toUID).Delete(&Follow{}).Error
 	if err != nil {
@@ -125,7 +126,7 @@ func dbUnfollowTopic(ctx context.Context, uid, topicID int64) error {
 		UID:         uid,
 		FollowCount: 1,
 	}
-	tx := dbCli.Begin()
+	tx := dbCli.BeginTx(ctx, &sql.TxOptions{})
 	defer tx.Rollback()
 	err := dbCli.Where("uid = ? and topic_id = ?", uid, topicID).Delete(&FollowTopicCount{}).Error
 	if err != nil {
