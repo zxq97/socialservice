@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"socialservice/global"
 	"socialservice/util/cast"
 	"socialservice/util/constant"
@@ -31,11 +31,11 @@ func cacheFollow(ctx context.Context, uid, toUID int64) error {
 	cfKey := fmt.Sprintf(RedisKeyFollowerCount, toUID)
 	now := float64(time.Now().Unix())
 	pipe := redisCli.Pipeline()
-	pipe.ZAdd(key, redis.Z{Member: toUID, Score: now})
-	pipe.ZAdd(fKey, redis.Z{Member: uid, Score: now})
-	pipe.Incr(cKey)
-	pipe.Incr(cfKey)
-	_, err := pipe.Exec()
+	pipe.ZAdd(ctx, key, &redis.Z{Member: toUID, Score: now})
+	pipe.ZAdd(ctx, fKey, &redis.Z{Member: uid, Score: now})
+	pipe.Incr(ctx, cKey)
+	pipe.Incr(ctx, cfKey)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		global.ExcLog.Printf("ctx %v follow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
 	}
@@ -48,11 +48,11 @@ func cacheUnfollow(ctx context.Context, uid, toUID int64) error {
 	cKey := fmt.Sprintf(RedisKeyFollowCount, uid)
 	cfKey := fmt.Sprintf(RedisKeyFollowerCount, toUID)
 	pipe := redisCli.Pipeline()
-	pipe.ZRem(key, toUID)
-	pipe.ZRem(fKey, uid)
-	pipe.Decr(cKey)
-	pipe.Decr(cfKey)
-	_, err := pipe.Exec()
+	pipe.ZRem(ctx, key, toUID)
+	pipe.ZRem(ctx, fKey, uid)
+	pipe.Decr(ctx, cKey)
+	pipe.Decr(ctx, cfKey)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		global.ExcLog.Printf("ctx %v unfollow pipeline uid %v to_uid %v err %v", ctx, uid, toUID, err)
 	}
@@ -63,9 +63,9 @@ func cacheFollowTopic(ctx context.Context, uid, topicID int64) error {
 	key := fmt.Sprintf(RedisKeyZFollowTopic, uid)
 	cKey := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
 	pipe := redisCli.Pipeline()
-	pipe.ZAdd(key, redis.Z{Member: topicID, Score: float64(time.Now().Unix())})
-	pipe.Incr(cKey)
-	_, err := pipe.Exec()
+	pipe.ZAdd(ctx, key, &redis.Z{Member: topicID, Score: float64(time.Now().Unix())})
+	pipe.Incr(ctx, cKey)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		global.ExcLog.Printf("ctx %v cacheFollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
 	}
@@ -76,9 +76,9 @@ func cacheUnfollowTopic(ctx context.Context, uid, topicID int64) error {
 	key := fmt.Sprintf(RedisKeyZFollowTopic, uid)
 	cKey := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
 	pipe := redisCli.Pipeline()
-	pipe.ZRem(key, topicID)
-	pipe.Decr(cKey)
-	_, err := pipe.Exec()
+	pipe.ZRem(ctx, key, topicID)
+	pipe.Decr(ctx, cKey)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		global.ExcLog.Printf("ctx %v cacheUnfollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
 	}
@@ -88,7 +88,7 @@ func cacheUnfollowTopic(ctx context.Context, uid, topicID int64) error {
 func cacheGetFollowCount(ctx context.Context, uid int64) (int64, int64, error) {
 	key := fmt.Sprintf(RedisKeyFollowCount, uid)
 	fKey := fmt.Sprintf(RedisKeyFollowerCount, uid)
-	val, err := redisCli.MGet(key, fKey).Result()
+	val, err := redisCli.MGet(ctx, key, fKey).Result()
 	if err != nil || len(val) != 2 {
 		global.ExcLog.Printf("ctx %v get follow count uid %v err %v", ctx, uid, err)
 		return 0, 0, err
@@ -102,7 +102,7 @@ func cacheGetFollowCount(ctx context.Context, uid int64) (int64, int64, error) {
 func cacheSetFollowCount(ctx context.Context, uid, followCount, followerCount int64) {
 	key := fmt.Sprintf(RedisKeyFollowCount, uid)
 	fKey := fmt.Sprintf(RedisKeyFollowerCount, uid)
-	err := redisCli.MSet(key, followCount, fKey, followerCount).Err()
+	err := redisCli.MSet(ctx, key, followCount, fKey, followerCount).Err()
 	if err != nil {
 		global.ExcLog.Printf("ctx %v set follow count uid %v err %v", ctx, uid, err)
 	}
@@ -110,7 +110,7 @@ func cacheSetFollowCount(ctx context.Context, uid, followCount, followerCount in
 
 func cacheGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
 	key := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
-	val, err := redisCli.Get(key).Result()
+	val, err := redisCli.Get(ctx, key).Result()
 	if err != nil && err != redis.Nil {
 		global.ExcLog.Printf("ctx %v cacheGetFollowTopicCount uid %v err %v", ctx, uid, err)
 		return 0, err
@@ -120,14 +120,14 @@ func cacheGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
 
 func cacheSetFollowTopicCount(ctx context.Context, uid, topicCnt int64) {
 	key := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
-	err := redisCli.Set(key, topicCnt, RedisKeyFollowCountTTL).Err()
+	err := redisCli.Set(ctx, key, topicCnt, RedisKeyFollowCountTTL).Err()
 	if err != nil {
 		global.ExcLog.Printf("ctx %v cacheSetFollowTopicCount uid %v topic_count %v err %v", ctx, uid, topicCnt)
 	}
 }
 
 func cacheGetFollow(ctx context.Context, key string, cursor, offset int64) ([]int64, bool, error) {
-	val, err := redisCli.ZRevRange(key, cursor, cursor+offset).Result()
+	val, err := redisCli.ZRevRange(ctx, key, cursor, cursor+offset).Result()
 	if err != nil {
 		global.ExcLog.Printf("ctx %v cache get key %v cursor %v err %v", ctx, key, cursor, err)
 		return nil, false, err
@@ -146,16 +146,16 @@ func cacheGetFollow(ctx context.Context, key string, cursor, offset int64) ([]in
 
 func cacheSetFollow(ctx context.Context, key string, uids []int64, utMap map[int64]int64) {
 	for i := 0; i < len(uids); i += constant.BatchSize {
-		z := make([]redis.Z, 0, constant.BatchSize)
+		z := make([]*redis.Z, 0, constant.BatchSize)
 		left := i
 		right := i + constant.BatchSize
 		if right > len(uids) {
 			right = len(uids)
 		}
 		for j := left; j < right; j++ {
-			z = append(z, redis.Z{Member: uids[i], Score: float64(utMap[uids[i]])})
+			z = append(z, &redis.Z{Member: uids[i], Score: float64(utMap[uids[i]])})
 		}
-		err := redisCli.ZAdd(key, z...).Err()
+		err := redisCli.ZAdd(ctx, key, z...).Err()
 		if err != nil {
 			global.ExcLog.Printf("ctx %v set follow z %v err %v", ctx, z, err)
 			continue
@@ -169,7 +169,7 @@ func getAllStream(ctx context.Context, key string, cursor uint64) ([]int64, uint
 		vals []string
 		err  error
 	)
-	vals, cursor, err = redisCli.ZScan(key, cursor, "", constant.BatchSize).Result()
+	vals, cursor, err = redisCli.ZScan(ctx, key, cursor, "", constant.BatchSize).Result()
 	if err != nil {
 		global.ExcLog.Printf("ctx %v getAllStream key %v cursor %v err %v", ctx, key, cursor, err)
 		return nil, 0, err

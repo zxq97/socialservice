@@ -2,7 +2,7 @@ package conf
 
 import (
 	"github.com/bradfitz/gomemcache/memcache"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -22,6 +22,7 @@ const (
 	RemindConfPath  = "/home/work/zzlove/conf/zzlove/remind.yaml"
 	SocialConfPath  = "/home/work/zzlove/conf/zzlove/social.yaml"
 	UserConfPath    = "/home/work/zzlove/conf/zzlove/user.yaml"
+	FeedConfPath    = "/home/work/zzlove/conf/zzlove/feed.yaml"
 
 	MysqlAddr = "%v:%v@tcp(%v:%v)/%v?charset=utf8mb4&parseTime=True"
 )
@@ -61,7 +62,9 @@ type KafkaConf struct {
 }
 
 type LogConf struct {
-	Path string `yaml:"path"`
+	Info  string `yaml:"info"`
+	Exc   string `yaml:"exc"`
+	Debug string `yaml:"debug"`
 }
 
 type Conf struct {
@@ -72,8 +75,7 @@ type Conf struct {
 	Grpc         GrpcConf         `yaml:"grpc"`
 	Etcd         EtcdConf         `yaml:"etcd"`
 	Kafka        KafkaConf        `yaml:"kafka"`
-	InfoLog      LogConf          `yaml:"info_log"`
-	ExcLog       LogConf          `yaml:"exc_log"`
+	LogPath      LogConf          `yaml:"log_path"`
 }
 
 func LoadYaml(path string) (*Conf, error) {
