@@ -14,7 +14,8 @@ const (
 	SleepTime     = 500 * time.Millisecond
 	DefaultOffset = 10
 
-	RedisKeyFollowCountTTL = 5 * time.Second
+	RedisKeyFollowCountTTL = 5 * time.Minute
+	RedisKeyFollowListTTL  = 30 * time.Minute
 
 	RedisKeyFollowCount      = "social_service_follow_count_%v"       // uid
 	RedisKeyFollowerCount    = "social_service_follower_count_%v"     // uid
@@ -110,6 +111,8 @@ func cacheSetFollowCount(ctx context.Context, uid, followCount, followerCount in
 	if err != nil {
 		global.ExcLog.Printf("ctx %v set follow count uid %v err %v", ctx, uid, err)
 	}
+	redisCli.Expire(ctx, key, RedisKeyFollowCountTTL)
+	redisCli.Expire(ctx, fKey, RedisKeyFollowCountTTL)
 }
 
 func cacheGetFollowTopicCount(ctx context.Context, uid int64) (int64, error) {
@@ -166,6 +169,7 @@ func cacheSetFollow(ctx context.Context, key string, uids []int64, utMap map[int
 		}
 		time.Sleep(SleepTime)
 	}
+	redisCli.Expire(ctx, key, RedisKeyFollowListTTL)
 }
 
 func getAllStream(ctx context.Context, key string, cursor uint64) ([]int64, uint64, error) {
