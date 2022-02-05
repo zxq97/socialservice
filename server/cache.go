@@ -30,9 +30,13 @@ func cacheFollow(ctx context.Context, uid, toUID int64) error {
 	cKey := fmt.Sprintf(RedisKeyFollowCount, uid)
 	cfKey := fmt.Sprintf(RedisKeyFollowerCount, toUID)
 	now := float64(time.Now().Unix())
+	if redisCli.Exists(ctx, key).Val() == 1 {
+		redisCli.ZAdd(ctx, key, &redis.Z{Member: toUID, Score: now})
+	}
+	if redisCli.Exists(ctx, fKey).Val() == 1 {
+		redisCli.ZAdd(ctx, fKey, &redis.Z{Member: uid, Score: now})
+	}
 	pipe := redisCli.Pipeline()
-	pipe.ZAdd(ctx, key, &redis.Z{Member: toUID, Score: now})
-	pipe.ZAdd(ctx, fKey, &redis.Z{Member: uid, Score: now})
 	pipe.Incr(ctx, cKey)
 	pipe.Incr(ctx, cfKey)
 	_, err := pipe.Exec(ctx)
@@ -62,10 +66,10 @@ func cacheUnfollow(ctx context.Context, uid, toUID int64) error {
 func cacheFollowTopic(ctx context.Context, uid, topicID int64) error {
 	key := fmt.Sprintf(RedisKeyZFollowTopic, uid)
 	cKey := fmt.Sprintf(RedisKeyFollowTopicCount, uid)
-	pipe := redisCli.Pipeline()
-	pipe.ZAdd(ctx, key, &redis.Z{Member: topicID, Score: float64(time.Now().Unix())})
-	pipe.Incr(ctx, cKey)
-	_, err := pipe.Exec(ctx)
+	if redisCli.Exists(ctx, key).Val() == 1 {
+		redisCli.ZAdd(ctx, key, &redis.Z{Member: topicID, Score: float64(time.Now().Unix())})
+	}
+	err := redisCli.Incr(ctx, cKey).Err()
 	if err != nil {
 		global.ExcLog.Printf("ctx %v cacheFollowTopic uid %v topic_id %v err %v", ctx, uid, topicID, err)
 	}
